@@ -4,8 +4,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/guregu/null.v3"
 	"github.com/twreporter/go-api/internal/query"
+	"gopkg.in/guregu/null.v3"
 )
 
 type Query struct {
@@ -23,6 +23,7 @@ type Filter struct {
 	Categories []string
 	Tags       []string
 	IDs        []string
+	Author     string
 }
 
 type SortBy struct {
@@ -129,6 +130,10 @@ func ParsePostListQuery(c *gin.Context) *Query {
 	}
 	if len(c.QueryArray(queryPostID)) > 0 {
 		q.Filter.IDs = c.QueryArray(queryPostID)
+	}
+
+	if author := c.Query("author"); author != "" {
+		q.Filter.Author = author
 	}
 
 	// Parse pagination

@@ -340,3 +340,4 @@ func (nc *newsV2Controller) helperCleanup(c *gin.Context, err error) {
 		log.Errorf("%+v", err)
 	}
 }
+

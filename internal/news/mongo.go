@@ -4,11 +4,11 @@ import (
 	"reflect"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/twreporter/go-api/internal/mongo"
+	"github.com/twreporter/go-api/internal/query"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/guregu/null.v3"
-	"github.com/twreporter/go-api/internal/mongo"
-	"github.com/twreporter/go-api/internal/query"
 )
 
 // tagMongo is used to map the query field to the corresponded field in real mongo document
@@ -76,6 +76,7 @@ type mongoFilter struct {
 	Categories []primitive.ObjectID `mongo:"categories"`
 	Tags       []primitive.ObjectID `mongo:"tags"`
 	IDs        []primitive.ObjectID `mongo:"_id"`
+	Author     primitive.ObjectID   `mongo:"author"`
 }
 
 func (mf mongoFilter) BuildStage() []bson.D {
@@ -113,6 +114,23 @@ func (mf mongoFilter) BuildElements() []bson.E {
 			if v, ok := mongo.BuildArray(fieldV.Interface().([]primitive.ObjectID)); ok {
 				elements = append(elements, mongo.BuildElement(tag, mongo.BuildDocument(mongo.OpIn, v)))
 			}
+		case primitive.ObjectID:
+			v := fieldV.Interface().(primitive.ObjectID)
+			// Build or search match
+			// {
+			//   $or: [
+			//     {"designers": v},
+			//     {"engineers": v},
+			//     {"photographers": v},
+			//     {"writters": v}
+			//   ]
+			// }
+			elements = append(elements, bson.E{Key: "$or", Value: bson.A{
+				bson.D{{fieldDesigners, v}},
+				bson.D{{fieldEngineers, v}},
+				bson.D{{fieldPhotographers, v}},
+				bson.D{{fieldWriters, v}},
+			}})
 		default:
 			log.Errorf("Unimplemented type %+v", fieldT.Type)
 		}
@@ -129,6 +147,7 @@ func fromFilter(f Filter) mongoFilter {
 		Categories: hexToObjectIDs(f.Categories),
 		Tags:       hexToObjectIDs(f.Tags),
 		IDs:        hexToObjectIDs(f.IDs),
+		Author:     hexToObjectIDs([]string{f.Author})[0],
 	}
 }
 
